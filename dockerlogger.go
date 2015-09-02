@@ -69,9 +69,13 @@ func main() {
 	if len(dockerlog_config) == 0 {
 		missingEnv("DOCKERLOG_CONFIG")
 	}
-	dockerlog_container := os.Getenv("DOCKERLOG_CONTAINER")
-	if len(dockerlog_container) == 0 {
-		missingEnv("DOCKERLOG_CONTAINER")
+	container_id := os.Getenv("DOCKERLOG_CONTAINERID")
+	if len(container_id) == 0 {
+		missingEnv("DOCKERLOG_CONTAINERID")
+	}
+	container_name := os.Getenv("DOCKERLOG_CONTAINERNAME")
+	if len(container_name) == 0 {
+		missingEnv("DOCKERLOG_CONTAINERNAME")
 	}
 
 	// Turn DOCKERLOG_CONFIG to an object
@@ -80,8 +84,9 @@ func main() {
 	fmt.Println(string(bolB))
 
 	ctx := logger.Context{
-		Config:      drv_config,
-		ContainerID: dockerlog_container,
+		Config:        drv_config,
+		ContainerID:   container_id,
+		ContainerName: container_name,
 	}
 
 	l_drv, err := drv(ctx)
