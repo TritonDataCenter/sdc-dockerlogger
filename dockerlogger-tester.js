@@ -12,7 +12,10 @@ var DRIVER_CONFIG = {
         'syslog-facility': 'daemon'
     }, 'fluentd': {
         'fluentd-tag': 'dockerlogger.tag',
-        'fluentd-address': 'localhost:24224'
+        'fluentd-address': '127.0.0.1:24224'
+    }, 'gelf': {
+        'gelf-tag': 'dockerlog-tag',
+        'gelf-address': 'udp://127.0.0.1:12201'
     }
 };
 
@@ -45,4 +48,5 @@ function startLogging(driver) {
 
 startLogging('syslog');
 startLogging('fluentd');
+startLogging('gelf');
 
