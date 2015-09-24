@@ -33,6 +33,7 @@ func streamFromDescriptor(fd uintptr, name string, ctx logger.Context, l_drv log
 			ContainerID: ctx.ContainerID,
 			Line:        []byte(line),
 			Source:      name,
+			Timestamp:   time.Now(),
 		}
 
 		if err := l_drv.Log(msg); err != nil {
