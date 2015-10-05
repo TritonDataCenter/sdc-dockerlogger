@@ -1,5 +1,15 @@
 #!/usr/node/bin/node --abort_on_uncaught_exception
 
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/*
+ * Copyright (c) 2015, Joyent, Inc.
+ */
+
 var child_process = require('child_process');
 var spawn = child_process.spawn;
 
@@ -25,7 +35,12 @@ function startLogging(driver) {
         env: {
             'DOCKERLOG_CONFIG': JSON.stringify(config),
             'DOCKERLOG_CONTAINERID': CONTAINERID,
-            'DOCKERLOG_CONTAINERNAME': CONTAINERNAME
+            'DOCKERLOG_CONTAINERNAME': CONTAINERNAME,
+            'DOCKERLOG_CREATETIME': (new Date()).toISOString(),
+            'DOCKERLOG_IMAGEID': '1001001',
+            'DOCKERLOG_IMAGENAME': 'imagename',
+            'DOCKERLOG_ENTRYPOINT': '[\"/bin/bash\"]',
+            'DOCKERLOG_CMD': '[]'
         },
         stdio: [
             0,
