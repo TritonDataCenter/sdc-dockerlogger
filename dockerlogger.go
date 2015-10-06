@@ -11,15 +11,14 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/docker/docker/daemon/logger"
 	"github.com/docker/docker/pkg/stringutils"
+	"io"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	// Importing packages here only to make sure their init gets called and
@@ -29,34 +28,13 @@ import (
 	_ "github.com/docker/docker/daemon/logger/syslog"
 )
 
-func streamFromDescriptor(fd uintptr, name string, ctx logger.Context, l_drv logger.Logger, wg sync.WaitGroup) {
-	f := os.NewFile(fd, name)
-
-	defer wg.Done()
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
-
-		msg := &logger.Message{
-			ContainerID: ctx.ContainerID,
-			Line:        []byte(line),
-			Source:      name,
-			Timestamp:   time.Now(),
-		}
-
-		if err := l_drv.Log(msg); err != nil {
-			log.Fatal(err)
-		}
-	}
-}
+const VERSION = "0.1.0"
 
 func usage(err error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "dockerlogger: %s\n", err.Error())
 	}
-	fmt.Fprintf(os.Stderr, "Usage: %s <fluentd|gelf|syslog>'\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s <version|fluentd|gelf|syslog>'\n", os.Args[0])
 	os.Exit(1)
 }
 
@@ -91,10 +69,14 @@ func main() {
 	var drv_config map[string]string
 	var container_entrypoint_array *stringutils.StrSlice
 	var container_cmd_array *stringutils.StrSlice
-	var wg sync.WaitGroup
 
 	if len(os.Args) != 2 {
 		usage(errors.New("invalid number of arguments"))
+	}
+
+	if os.Args[1] == "version" {
+		fmt.Printf("%s\n", VERSION)
+		os.Exit(0)
 	}
 
 	// Special case for testing that we're building ctx correctly
@@ -183,8 +165,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	wg.Add(2)
-	go streamFromDescriptor(3, "stdout", ctx, l_drv, wg)
-	go streamFromDescriptor(4, "stderr", ctx, l_drv, wg)
-	wg.Wait()
+	copier := logger.NewCopier(
+		container_id,
+		map[string]io.Reader{
+			"stdout": os.NewFile(3, "stdout"),
+			"stderr": os.NewFile(4, "stderr"),
+		},
+		l_drv,
+	)
+	copier.Run()
+	copier.Wait()
 }

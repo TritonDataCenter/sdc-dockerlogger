@@ -56,6 +56,7 @@ function startLogging(driver) {
     });
 
     setInterval(function () {
+        console.log('TICK');
         child.stdio[3].write('hello ' + driver + ' stdout\n'); // should go to info priority
         child.stdio[4].write('hello ' + driver + ' stderr\n'); // should go to error priority
     }, 5000);
