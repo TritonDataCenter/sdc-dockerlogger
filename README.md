@@ -11,5 +11,5 @@ information on how docker logging is intended to work in Triton. The section
 # LICENCE
 
 See the LICENSE file for details about files in the top-level directory and
-the individual src/github.com/* directories for LICENCE/LICENSE.md files for
-subcomponents that have been vendored in.
+the individual vendor/src/github.com/* directories for LICENCE/LICENSE.md files
+for subcomponents that have been vendored in.

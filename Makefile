@@ -9,7 +9,7 @@
 #
 
 ELFEDIT=/usr/bin/elfedit
-GOPATH=$(PWD)
+GOPATH=$(PWD)/vendor
 TARGETS=dockerlogger dockerlogger.smartos
 
 .PHONY: all
