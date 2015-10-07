@@ -1,0 +1,185 @@
+#!/bin/bash
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright (c) 2015, Joyent, Inc.
+#
+
+#
+# Make a dockerlogger shar (dockerlogger-${BUILDSTAMP}.sh) package.
+#
+
+if [ "${TRACE}" != "" ]; then
+    export PS4='${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+    set -o xtrace
+fi
+set -o errexit
+set -o pipefail
+
+
+
+#---- config/globals
+
+TOP=$(cd $(dirname $0)/../; pwd)
+BUILD_DIR=${TOP}/build
+
+if [[ -z "${TIMESTAMP}" ]]; then
+    TIMESTAMP=$(date -u "+%Y%m%dT%H%M%SZ")
+fi
+
+# Need GNU awk for multi-char arg to "-F".
+AWK=$((which gawk 2>/dev/null | grep -v "^no ") || which awk)
+GITDESCRIBE=g$(git describe --all --long --dirty | ${AWK} -F'-g' '{print $NF}')
+
+SHAR=`which shar`
+
+
+
+#---- functions
+
+function fatal {
+    echo "$(basename $0): error: $1"
+    exit 1
+}
+
+function usage() {
+    if [[ -n "$1" ]]; then
+        echo "error: $1"
+        echo ""
+    fi
+    echo "Usage:"
+    echo "  mk-shar [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -h      print this help and exit"
+    echo "  -b      branch for output shar name, default is 'master'"
+    echo "  -o      output directory to which to write results, default is 'build'"
+    echo ""
+}
+
+function mk_shar_manifest() {
+    local branch=$1
+    local release_manifest=$2
+
+    local name=dockerlogger
+    local stage_dir=/tmp
+    local stamp=${branch}-${TIMESTAMP}-${GITDESCRIBE}
+    local release_file
+    release_file=$(basename `ls ${TOP}/build/dockerlogger-*.sh | head -n 1`)
+
+    mkdir -p ${stage_dir}/${name}
+    cat ${TOP}/manifest.tmpl | sed \
+            -e "s/UUID/$(uuid -v4)/" \
+            -e "s/NAME/${name}/" \
+            -e "s/BUILDSTAMP/${stamp}/g" \
+            -e "s/SIZE/$(stat --printf="%s" ${TOP}/build/${release_file})/" \
+            -e "s/SHA/$(openssl sha1 ${TOP}/build/${release_file} \
+                | cut -d ' ' -f2)/" \
+            > ${release_manifest}
+}
+
+
+function mk_shar() {
+    local output_dir="$1"
+    local branch="$2"
+
+    echo "Make shar (timestamp ${TIMESTAMP})"
+
+    # Get all the files and boilerplate into the build dir.
+    rm -rf ${BUILD_DIR}
+    mkdir -p ${BUILD_DIR}/dockerlogger
+    cp tools/install.sh ${BUILD_DIR}/dockerlogger/
+    cp dockerlogger.smartos ${BUILD_DIR}/dockerlogger/dockerlogger
+    cp smf/* ${BUILD_DIR}/dockerlogger/
+
+    # Create the shar.
+    local tmp=/var/tmp
+    local sh_filename=dockerlogger-${branch}-${TIMESTAMP}-${GITDESCRIBE}.sh
+    cd ${BUILD_DIR}
+
+    # FIRST: put a header so we move to the ${tmp} dir
+    (cat <<__EOF__
+#!/bin/sh
+if [ \`pwd\` != '${tmp}' ]; then
+  cd ${tmp}
+fi
+
+# Clean up possible previous runs
+rm -fr dockerlogger
+__EOF__
+)> ${sh_filename}
+
+    # SECOND: add the shar bits, but cut off the trailing exit
+    ${SHAR} -D -n "Joyent" ./dockerlogger/ | grep -v '^exit 0' >> ${sh_filename}
+
+    # FINALLY: add the call to the install script
+    cat >>${sh_filename} <<EOF
+
+set -o errexit
+set -o pipefail
+
+if [[ -f dockerlogger/install.sh ]]; then
+    (cd dockerlogger && /bin/bash ./install.sh)
+fi
+
+# Delete dockerlogger directory.
+rm -fr dockerlogger
+
+exit 0
+EOF
+
+    # Create the md5sums file.
+    local md5sum_filename=dockerlogger-${branch}-${TIMESTAMP}-${GITDESCRIBE}.md5sum
+    openssl dgst -md5 ${sh_filename} | cut -d' ' -f 2 > ${md5sum_filename}
+
+    local manifest_filename=dockerlogger-${branch}-${TIMESTAMP}-${GITDESCRIBE}.manifest
+    mk_shar_manifest ${branch} ${manifest_filename}
+
+    # Copy bits to output dir, if necessary.
+    cd ${TOP}
+    if [[ "${output_dir}" != "${BUILD_DIR}" ]]; then
+        cp ${BUILD_DIR}/${sh_filename} ${output_dir}/
+        cp ${BUILD_DIR}/${md5sum_filename} ${output_dir}/
+        cp ${BUILD_DIR}/${manifest_filename} ${output_dir}/
+    fi
+    echo "Created '${output_dir}/${sh_filename}'."
+    echo "Created '${output_dir}/${md5sum_filename}'."
+    echo "Created '${output_dir}/${manifest_filename}'."
+}
+
+
+
+#---- mainline
+
+# Process arguments.
+branch="master"
+output_dir=${BUILD_DIR}
+while getopts "hb:o:" c; do
+    case "${c}" in
+    h)
+        usage
+        exit 0
+        ;;
+    b)
+        branch=${OPTARG}
+        ;;
+    o)
+        output_dir=${OPTARG}
+        ;;
+    *)
+        usage "illegal option -- ${OPTARG}"
+        exit 1
+        ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+[[ -n "${branch}" ]] || fatal "missing branch"
+[[ -n "${output_dir}" ]] || fatal "missing output_dir"
+
+mk_shar "${output_dir}" "${branch}"
+exit $?

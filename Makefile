@@ -25,5 +25,11 @@ dockerlogger: dockerlogger.go
 fmt:
 	gofmt -w dockerlogger.go
 
+pkg: dockerlogger.smartos
+	@[[ -n "$(BRANCH)" ]] || (echo "missing BRANCH="; exit 1)
+	@[[ -n "$(DESTDIR)" ]] || (echo "missing DESTDIR="; exit 1)
+	./tools/mk-shar -b $(BRANCH) -o $(DESTDIR)
+
 clean:
 	rm -f $(TARGETS)
+	rm -rf build
