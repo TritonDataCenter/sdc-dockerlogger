@@ -30,6 +30,10 @@ pkg: dockerlogger.smartos
 	@[[ -n "$(DESTDIR)" ]] || (echo "missing DESTDIR="; exit 1)
 	./tools/mk-shar -b $(BRANCH) -o $(DESTDIR)
 
+.PHONY: check
+check:
+	@echo "Successfully checked nothing. :)"
+
 clean:
 	rm -f $(TARGETS)
 	rm -rf build
