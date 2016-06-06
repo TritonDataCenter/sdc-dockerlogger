@@ -89,11 +89,12 @@ function adopt_instance()
     [[ -n ${service_uuid} ]] || \
         warn_and_exit "Unable to get service_uuid for role ${AGENT} from SAPI"
 
+    # BEGIN BASHSTYLED
     sapi_instance=$(curl ${SAPI_URL}/instances -sS -X POST \
         -H content-type:application/json \
-        -d "{ \"service_uuid\" : \"${service_uuid}\", " \
-            "\"uuid\" : \"${instance_uuid}\" }" \
+        -d "{ \"service_uuid\" : \"${service_uuid}\", \"uuid\" : \"${instance_uuid}\" }" \
     | json -H uuid)
+    # END BASHSTYLED
 
     [[ -n ${sapi_instance} ]] \
         || warn_and_exit "Unable to adopt ${instance_uuid} into SAPI"
@@ -112,9 +113,5 @@ function save_instance_uuid()
 }
 
 
-SAPI_URL=http://${CONFIG_sapi_domain}
-IMGAPI_URL=http://${CONFIG_imgapi_domain}
-
-adopt_instance_if_necessary
 
 exit 0
