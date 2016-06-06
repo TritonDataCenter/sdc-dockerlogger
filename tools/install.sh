@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2016, Joyent, Inc.
+# Copyright 2016, Joyent, Inc.
 #
 
 set -o errexit
@@ -61,7 +61,7 @@ function instance_exists()
 
 function adopt_instance_if_necessary()
 {
-    local instance_uuid=$(cat $ETC_DIR/$AGENT.uuid)
+    local instance_uuid=$(cat $ETC_DIR/${AGENT}.uuid)
 
     # verify it exists on sapi if there is an instance uuid written to disk
     if [[ -n ${instance_uuid} ]]; then
@@ -77,7 +77,7 @@ function adopt_instance_if_necessary()
 function adopt_instance()
 {
     local instance_uuid=$1
-    echo $instance_uuid > $ETC_DIR/$AGENT
+    echo $instance_uuid > $ETC_DIR/${AGENT}.uuid
 
     local service_uuid=""
     local sapi_instance=""
@@ -104,11 +104,11 @@ function adopt_instance()
 
 function save_instance_uuid()
 {
-    local instance_uuid=$(cat $ETC_DIR/$AGENT)
+    local instance_uuid=$(cat $ETC_DIR/${AGENT})
 
     if [[ -z ${instance_uuid} ]]; then
         instance_uuid=$(uuid -v4)
-        echo $instance_uuid > $ETC_DIR/$AGENT.uuid
+        echo $instance_uuid > $ETC_DIR/${AGENT}.uuid
     fi
 }
 
