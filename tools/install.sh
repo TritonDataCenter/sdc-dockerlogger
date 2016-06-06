@@ -112,6 +112,9 @@ function save_instance_uuid()
     fi
 }
 
+SAPI_URL=http://${CONFIG_sapi_domain}
+IMGAPI_URL=http://${CONFIG_imgapi_domain}
 
+adopt_instance_if_necessary
 
 exit 0
