@@ -81,6 +81,7 @@ function adopt_instance()
 
     local service_uuid=""
     local sapi_instance=""
+    local server_uuid=""
     local i=0
 
     service_uuid=$(curl "${SAPI_URL}/services?type=agent&name=${AGENT}"\
@@ -89,10 +90,12 @@ function adopt_instance()
     [[ -n ${service_uuid} ]] || \
         warn_and_exit "Unable to get service_uuid for role ${AGENT} from SAPI"
 
+    server_uuid=$(/usr/bin/sysinfo|json UUID)
+
     # BEGIN BASHSTYLED
     sapi_instance=$(curl ${SAPI_URL}/instances -sS -X POST \
         -H content-type:application/json \
-        -d "{ \"service_uuid\" : \"${service_uuid}\", \"uuid\" : \"${instance_uuid}\" }" \
+        -d "{ \"service_uuid\" : \"${service_uuid}\", \"uuid\" : \"${instance_uuid}\", \"params\" : { \"server_uuid\": \"${server_uuid}\"} }" \
     | json -H uuid)
     # END BASHSTYLED
 
