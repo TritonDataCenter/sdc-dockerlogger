@@ -1,3 +1,4 @@
 build
 dockerlogger
 dockerlogger.smartos
+node_modules
