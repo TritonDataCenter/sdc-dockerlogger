@@ -33,6 +33,8 @@ function LogGen(opts) {
     self.driver = opts.driver;
     self.driverOpts = opts.driverOpts;
 
+    self.exitCallback = opts.exitCallback;
+
     if (opts.containerId) {
         self.containerId = opts.containerId;
     } else {
@@ -74,8 +76,6 @@ function LogGen(opts) {
     } else {
         self.cmd = [];
     }
-
-    self.start();
 }
 
 /*
@@ -92,7 +92,7 @@ function LogGen(opts) {
     }
 */
 
-LogGen.prototype.start = function start() {
+LogGen.prototype.start = function start(callback) {
     var self = this;
 
     self.child = spawn(__dirname + '/../../dockerlogger', [self.driver], {
@@ -116,11 +116,12 @@ LogGen.prototype.start = function start() {
     });
 
     self.child.on('close', function (code, signal) {
-        console.log('# ' +  self.driver + '_child process exited with: '
-            + JSON.stringify({code: code, signal: signal}));
+        self.exitCallback(code, signal);
     });
 
     self.pid = self.child.pid;
+
+    callback();
 };
 
 LogGen.prototype.stop = function stop() {
@@ -133,8 +134,6 @@ LogGen.prototype.stop = function stop() {
 
 LogGen.prototype.writeStdout = function writeStdout(string) {
     var self = this;
-
-    console.error('writeStdout');
 
     self.child.stdio[3].write(string);
 };

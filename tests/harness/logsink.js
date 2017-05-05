@@ -20,29 +20,35 @@ function LogSink(opts) {
 
     self.driver = opts.driver;
 
-    self.start();
+    self.exitCallback = opts.exitCallback;
+    self.msgCallback = opts.msgCallback;
 }
 
-LogSink.prototype.start = function start() {
+LogSink.prototype.start = function start(callback) {
     var self = this;
     var sink_backend = __dirname + '/logsink_' + self.driver + '.js';
 
     self.child = fork(
         sink_backend,
         [],
-        {stdio: [0, 1, 2, 'ipc']}
+        {}
     );
 
-    // .on('message', function(msg) {})
-    // .on('exit', function(code) {})
-    self.on = self.child.on;
+    self.child.on('message', function (msg) {
+        self.msgCallback(msg);
+    });
+
+    self.child.on('exit', function (code) {
+        self.exitCallback(code);
+    });
+
+    callback();
 };
 
 LogSink.prototype.stop = function stop() {
     var self = this;
 
     self.child.kill();
-    delete self.on;
     delete self.child;
 };
 

@@ -8,7 +8,8 @@
         "assert-plus": "1.0.0",
         "graygelf": "1.0.2",
         "tape": "4.6.3",
-        "uuid": "3.0.1"
+        "uuid": "3.0.1",
+        "vasync": "1.6.4"
     },
     "license": "MPL-2.0"
 }

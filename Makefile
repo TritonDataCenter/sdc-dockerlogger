@@ -39,10 +39,13 @@ pkg: dockerlogger.smartos
 
 .PHONY: check
 check:
-	@echo "Successfully checked nothing. :)"
+	@echo "No 'make check' here."
+
+node_modules/tape/bin/tape:
+	@npm install
 
 .PHONY: test
-test:
+test: node_modules/tape/bin/tape
 	@node ./tests/test_*.js
 
 .PHONY: clean
