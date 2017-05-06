@@ -19,7 +19,7 @@
 //
 // Until there are valid messages, we'll just parse manually.
 function parser(msg) {
-    var matches = msg.match(/^<(\d+)> ?([\d\-\:\.TZ]+) (\w+) (\w+)\/(\w+)\[(\d+)\]: (.*)$/);
+    var matches = msg.match(/^<(\d+)> ?([\d\-\:\.TZ]+) ([\w.]+) (\w+)\/(\w+)\[(\d+)\]: (.*)$/);
     var obj = {};
 
     obj.originalMessage = msg;

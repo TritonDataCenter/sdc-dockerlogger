@@ -45,7 +45,7 @@ node_modules/tape/bin/tape:
 	@npm install
 
 .PHONY: test
-test: node_modules/tape/bin/tape
+test: $(TARGET) node_modules/tape/bin/tape
 	@ls -1 ./tests/test_*.js | xargs -L 1 node
 
 .PHONY: clean
