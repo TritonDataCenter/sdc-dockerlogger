@@ -9,7 +9,6 @@
  */
 
 var EventEmitter = require('events').EventEmitter;
-var fork = require('child_process').fork;
 var os = require('os');
 
 var assert = require('assert-plus');
@@ -70,23 +69,27 @@ test('setup', function _test(t) {
     });
 });
 
-test('send a syslog message', function _test(t) {
+test('send some syslog messages', function _test(t) {
     var received = 0;
 
     NOTIFIER.on('message', function onMessage(msg) {
         var delta;
         var now = (new Date()).getTime();
 
+        if (process.env.DEBUG_MSG) {
+            console.error('# msg: ' + JSON.stringify(msg));
+        }
+
         // receive the test messages
         received++;
         if (received === 1) {
             t.equal(msg.message, 'stdout syslog test message',
                 'check message');
-            t.equal(msg.prival, '14', '1st msg is stdout');
+            t.equal(msg.prival, 14, '1st msg is stdout');
         } else {
             t.equal(msg.message, 'stderr syslog test message',
                 'check message');
-            t.equal(msg.prival, '11', '2nd msg is stderr');
+            t.equal(msg.prival, 11, '2nd msg is stderr');
         }
 
         delta = now - (new Date(msg.timestamp)).getTime();
@@ -94,8 +97,6 @@ test('send a syslog message', function _test(t) {
         t.equal(msg.host, os.hostname(), 'check hostname');
         t.equal(msg.appName, 'dockerlogger', 'check appName');
         t.equal(msg.tag, GENERATOR.driverOpts['syslog-tag'], 'check tag');
-
-        console.error('# msg: ' + JSON.stringify(msg));
 
         if (received === 2) {
             // got both!

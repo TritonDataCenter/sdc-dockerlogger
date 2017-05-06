@@ -10,6 +10,7 @@
 
 var assert = require('assert-plus');
 var spawn = require('child_process').spawn;
+
 var uuid = require('uuid');
 
 var VALID_DRIVERS = ['fluentd', 'gelf', 'syslog'];

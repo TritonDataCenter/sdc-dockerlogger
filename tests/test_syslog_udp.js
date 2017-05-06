@@ -27,7 +27,7 @@ test('setup', function _test(t) {
     t.ok(true, 'setting up');
 
     SINK = new LogSink({
-        driver: 'gelf_udp',
+        driver: 'syslog_udp',
         exitCallback: function (code) {
             console.log('# exit from sink: ' + code);
         },
@@ -37,11 +37,12 @@ test('setup', function _test(t) {
     });
 
     GENERATOR = new LogGen({
-        containerName: 'gelfContainer',
-        driver: 'gelf',
+        containerName: 'syslogContainer',
+        driver: 'syslog',
         driverOpts: {
-            'gelf-tag': 'taggyMcTagface',
-            'gelf-address': 'udp://127.0.0.1:12201'
+            'syslog-facility': 'daemon',
+            'syslog-tag': 'taggyMcTagface',
+            'syslog-address': 'udp://127.0.0.1:10514'
         },
         exitCallback: function (code, signal) {
             console.log('# exit from generator: '
@@ -63,17 +64,19 @@ test('setup', function _test(t) {
     }, function _donePipeline(err) {
         assert.ifError(err, 'donePipeline');
 
-        t.end();
+        // XXX timeout is here because we don't have a good way to know when
+        // these things are "ready". If we figure one out, use that instead.
+        setTimeout(function () {
+            t.end();
+        }, 1000);
     });
 });
 
-test('send some gelf messages', function _test(t) {
-    var delta;
-    var idx;
-    var msg;
+test('send some syslog messages', function _test(t) {
     var received = 0;
 
     NOTIFIER.on('message', function onMessage(msg) {
+        var delta;
         var now = (new Date()).getTime();
 
         if (process.env.DEBUG_MSG) {
@@ -83,29 +86,20 @@ test('send some gelf messages', function _test(t) {
         // receive the test messages
         received++;
         if (received === 1) {
-            t.equal(msg.short_message, 'stdout gelf test message',
+            t.equal(msg.message, 'stdout syslog test message',
                 'check message');
-            t.equal(msg.level, 6, 'level 6 for stdout');
+            t.equal(msg.prival, 30, '1st msg is stdout');
         } else {
-            t.equal(msg.short_message, 'stderr gelf test message',
+            t.equal(msg.message, 'stderr syslog test message',
                 'check message');
-            t.equal(msg.level, 3, 'level 3 for stderr');
+            t.equal(msg.prival, 27, '2nd msg is stderr');
         }
-        t.equal(msg.version, '1.1', 'check version');
-        t.equal(msg.host, os.hostname(), 'check hostname');
-        t.equal(msg.full_message, '', 'check full_message');
-        delta = now - (msg.timestamp * 1000);
+
+        delta = now - (new Date(msg.timestamp)).getTime();
         t.ok(delta < 10000, 'timestamp less than 10s old (' + delta + 'ms)');
-        t.equal(msg.facility, '', 'check facility');
-        t.equal(msg._command, '/bin/bash', 'check _command');
-        t.equal(msg._container_id, GENERATOR.containerId, 'check _container_id');
-        t.equal(msg._container_name, GENERATOR.containerName, 'check _container_name');
-        // replace the 0Z since magically dockerlogger doesn't keep it.
-        t.equal(msg._created, GENERATOR.createTime.replace(/0+Z$/, 'Z'),
-            'check _created: ' + GENERATOR.createTime);
-        t.equal(msg._image_id, GENERATOR.imageId, 'check _image_id');
-        t.equal(msg._image_name, GENERATOR.imageName, 'check _image_name');
-        t.equal(msg._tag, GENERATOR.driverOpts['gelf-tag'], 'check _tag');
+        t.equal(msg.host, os.hostname(), 'check hostname');
+        t.equal(msg.appName, 'dockerlogger', 'check appName');
+        t.equal(msg.tag, GENERATOR.driverOpts['syslog-tag'], 'check tag');
 
         if (received === 2) {
             // got both!
@@ -114,11 +108,10 @@ test('send some gelf messages', function _test(t) {
     });
 
     // send the test messages
-    GENERATOR.writeStdout('stdout gelf test message\n');
+    GENERATOR.writeStdout('stdout syslog test message\n');
     // delay on the second message to guarantee order
-    // XXX: shouldn't dockerlogger guarantee order?!
     setTimeout(function _sendStderrMsg() {
-        GENERATOR.writeStderr('stderr gelf test message\n');
+        GENERATOR.writeStderr('stderr syslog test message\n');
     }, 100);
 });
 

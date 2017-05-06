@@ -9,7 +9,6 @@
  */
 
 var EventEmitter = require('events').EventEmitter;
-var fork = require('child_process').fork;
 var os = require('os');
 
 var assert = require('assert-plus');
@@ -69,12 +68,16 @@ test('setup', function _test(t) {
     });
 });
 
-test('send a fluentd message', function _test(t) {
+test('send some fluentd messages', function _test(t) {
     var received = 0;
 
     NOTIFIER.on('message', function onMessage(msg) {
         var delta;
         var now = (new Date()).getTime();
+
+        if (process.env.DEBUG_MSG) {
+            console.error('# msg: ' + JSON.stringify(msg));
+        }
 
         // receive the test messages
         received++;
@@ -87,8 +90,6 @@ test('send a fluentd message', function _test(t) {
                 'check message');
             t.equal(msg.record.source, 'stderr', '2nd msg is stderr');
         }
-
-        console.error('# msg: ' + JSON.stringify(msg));
 
         t.equal(msg.tag, GENERATOR.driverOpts['fluentd-tag'], 'check tag');
         delta = now - (msg.time * 1000);

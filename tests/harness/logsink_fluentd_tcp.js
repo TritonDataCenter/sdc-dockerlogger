@@ -15,9 +15,6 @@ var net = require('net');
 var assert = require('assert-plus');
 var msgpack = require("msgpack-lite");
 
-//var gelfserver = require('graygelf/server');
-//var server = gelfserver();
-
 var server = net.createServer(function(socket) {
     var decodeStream = msgpack.createDecodeStream();
 
@@ -34,18 +31,6 @@ var server = net.createServer(function(socket) {
 
         process.send(obj);
     });
-
-/*
-    socket.on('readable', function _onReadable() {
-        var chunk;
-
-        // read the first chunk
-        chunk = socket.read();
-
-        console.error('CHUNK: ' + JSON.stringify(chunk.toString()));
-    });
-*/
-
 });
 
 server.on('listening', function _onListening() {
