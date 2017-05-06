@@ -46,7 +46,7 @@ node_modules/tape/bin/tape:
 
 .PHONY: test
 test: node_modules/tape/bin/tape
-	@node ./tests/test_*.js
+	@ls -1 ./tests/test_*.js | xargs -L 1 node
 
 .PHONY: clean
 clean:

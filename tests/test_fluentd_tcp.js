@@ -28,7 +28,7 @@ test('setup', function _test(t) {
     t.ok(true, 'setting up');
 
     SINK = new LogSink({
-        driver: 'gelf_udp',
+        driver: 'fluentd_tcp',
         exitCallback: function (code) {
             console.log('# exit from sink: ' + code);
         },
@@ -38,11 +38,12 @@ test('setup', function _test(t) {
     });
 
     GENERATOR = new LogGen({
-        containerName: 'gelfContainer',
-        driver: 'gelf',
+        containerId: 'deadbeefcafe',  // must be at least 12 characters
+        containerName: 'fluentdContainer',
+        driver: 'fluentd',
         driverOpts: {
-            'gelf-tag': 'taggyMcTagface',
-            'gelf-address': 'udp://127.0.0.1:12201'
+            'fluentd-address': '127.0.0.1:24220',
+            'fluentd-tag': 'taggyMcTagface'
         },
         exitCallback: function (code, signal) {
             console.log('# exit from generator: '
@@ -64,47 +65,37 @@ test('setup', function _test(t) {
     }, function _donePipeline(err) {
         assert.ifError(err, 'donePipeline');
 
-        // XXX timeout is here because we don't have a good way to know when
-        // these things are "ready". If we figure one out, use that instead.
-        setTimeout(function () {
-            t.end();
-        }, 1000);
+        t.end();
     });
 });
 
-test('send a gelf message', function _test(t) {
-    var delta;
-    var idx;
-    var msg;
+test('send a fluentd message', function _test(t) {
     var received = 0;
 
     NOTIFIER.on('message', function onMessage(msg) {
+        var delta;
         var now = (new Date()).getTime();
 
         // receive the test messages
         received++;
         if (received === 1) {
-            t.equal(msg.short_message, 'stdout gelf test message',
+            t.equal(msg.record.log, 'stdout fluentd test message',
                 'check message');
-            t.equal(msg.level, 6, 'level 6 for stdout');
+            t.equal(msg.record.source, 'stdout', '1st msg is stdout');
         } else {
-            t.equal(msg.short_message, 'stderr gelf test message',
+            t.equal(msg.record.log, 'stderr fluentd test message',
                 'check message');
-            t.equal(msg.level, 3, 'level 3 for stderr');
+            t.equal(msg.record.source, 'stderr', '2nd msg is stderr');
         }
-        t.equal(msg.version, '1.1', 'check version');
-        t.equal(msg.host, os.hostname(), 'check hostname');
-        t.equal(msg.full_message, '', 'check full_message');
-        delta = now - (msg.timestamp * 1000);
+
+        console.error('# msg: ' + JSON.stringify(msg));
+
+        t.equal(msg.tag, GENERATOR.driverOpts['fluentd-tag'], 'check tag');
+        delta = now - (msg.time * 1000);
         t.ok(delta < 10000, 'timestamp less than 10s old (' + delta + 'ms)');
-        t.equal(msg.facility, '', 'check facility');
-        t.equal(msg._command, '/bin/bash', 'check _command');
-        t.equal(msg._container_id, GENERATOR.containerId, 'check _container_id');
-        t.equal(msg._container_name, GENERATOR.containerName, 'check _container_name');
-        t.equal(msg._created, GENERATOR.createTime, 'check _created');
-        t.equal(msg._image_id, GENERATOR.imageId, 'check _image_id');
-        t.equal(msg._image_name, GENERATOR.imageName, 'check _image_name');
-        t.equal(msg._tag, GENERATOR.driverOpts['gelf-tag'], 'check _tag');
+        t.equal(msg.record.container_id, GENERATOR.containerId, 'check container_id');
+        t.equal(msg.record.container_name, GENERATOR.containerName, 'check container_name');
+        t.equal(msg.option, null, 'check option is "null"');
 
         if (received === 2) {
             // got both!
@@ -112,9 +103,9 @@ test('send a gelf message', function _test(t) {
         }
     });
 
-    // send the test message
-    GENERATOR.writeStdout('stdout gelf test message\n');
-    GENERATOR.writeStderr('stderr gelf test message\n');
+    // send the test messages
+    GENERATOR.writeStdout('stdout fluentd test message\n');
+    GENERATOR.writeStderr('stderr fluentd test message\n');
 });
 
 test('teardown', function _test(t) {

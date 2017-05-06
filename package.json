@@ -6,7 +6,10 @@
     "private": true,
     "dependencies": {
         "assert-plus": "1.0.0",
+        "glossy": "0.1.7",
         "graygelf": "1.0.2",
+        "msgpack-lite": "0.1.26",
+        "syslogd": "1.1.2",
         "tape": "4.6.3",
         "uuid": "3.0.1",
         "vasync": "1.6.4"

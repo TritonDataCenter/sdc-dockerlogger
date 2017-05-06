@@ -18,10 +18,14 @@ server.on('message', function onMessage(gelf) {
     process.send(gelf);
 });
 
-// on('error') just let us die
-
 process.on('SIGTERM', function () {
+    process.send({LOGSINK: 'SIGTERM'});
     server.close();
 });
+
+// pretend we know when we're listening, since gelfserver doesn't tell us.
+setTimeout(function () {
+    process.send({LOGSINK: 'listening'});
+}, 1000);
 
 server.listen(12201);

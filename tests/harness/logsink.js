@@ -35,14 +35,21 @@ LogSink.prototype.start = function start(callback) {
     );
 
     self.child.on('message', function (msg) {
+        var keys = Object.keys(msg);
+        if (keys.length === 1 && keys[0] === 'LOGSINK') {
+            if (msg.LOGSINK === 'listening') {
+                callback();
+            } else {
+                console.error('# MSG: ' + JSON.stringify(msg));
+            }
+            return;
+        }
         self.msgCallback(msg);
     });
 
     self.child.on('exit', function (code) {
         self.exitCallback(code);
     });
-
-    callback();
 };
 
 LogSink.prototype.stop = function stop() {
