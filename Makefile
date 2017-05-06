@@ -5,16 +5,21 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 ELFEDIT=/usr/bin/elfedit
 GOPATH=$(PWD)/vendor
 TARGETS=dockerlogger dockerlogger.smartos
 
-.PHONY: all
+ifeq ($(shell uname -s),Darwin)
+	TARGET = dockerlogger
+else
+	TARGET = dockerlogger.smartos
+endif
 
-all: dockerlogger.smartos
+.PHONY: all
+all: $(TARGET)
 
 dockerlogger.smartos: dockerlogger
 	/usr/bin/elfedit -e 'ehdr:ei_osabi ELFOSABI_SOLARIS' dockerlogger dockerlogger.smartos
@@ -22,9 +27,11 @@ dockerlogger.smartos: dockerlogger
 dockerlogger: dockerlogger.go
 	GOPATH=$(GOPATH) go build
 
+.PHONY: fmt
 fmt:
 	gofmt -w dockerlogger.go
 
+.PHONY: pkg
 pkg: dockerlogger.smartos
 	@[[ -n "$(BRANCH)" ]] || (echo "missing BRANCH="; exit 1)
 	@[[ -n "$(DESTDIR)" ]] || (echo "missing DESTDIR="; exit 1)
@@ -32,8 +39,16 @@ pkg: dockerlogger.smartos
 
 .PHONY: check
 check:
-	@echo "Successfully checked nothing. :)"
+	@echo "No 'make check' here."
 
+node_modules/tape/bin/tape:
+	@npm install
+
+.PHONY: test
+test: $(TARGET) node_modules/tape/bin/tape
+	@ls -1 ./tests/test_*.js | xargs -L 1 node
+
+.PHONY: clean
 clean:
 	rm -f $(TARGETS)
 	rm -rf build

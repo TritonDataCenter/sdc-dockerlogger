@@ -1,5 +1,3 @@
-// +build linux solaris
-
 // Package syslog provides the logdriver for forwarding server logs to syslog endpoints.
 package syslog
 

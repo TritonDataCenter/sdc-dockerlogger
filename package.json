@@ -1,0 +1,17 @@
+{
+    "name": "dockerlogger",
+    "description": "Dockerlogger",
+    "version": "1.0.0",
+    "author": "Joyent (joyent.com)",
+    "private": true,
+    "dependencies": {
+        "assert-plus": "1.0.0",
+        "lstream": "0.0.4",
+        "graygelf": "1.0.2",
+        "msgpack-lite": "0.1.26",
+        "tape": "4.6.3",
+        "uuid": "3.0.1",
+        "vasync": "1.6.4"
+    },
+    "license": "MPL-2.0"
+}
