@@ -14,7 +14,25 @@ var net = require('net');
 
 var assert = require('assert-plus');
 var lineStream = require('lstream');
-var syslogParser = require('glossy').Parse; // or wherever your glossy libs are
+
+function parser(msg) {
+    var matches = msg.match(/^<(\d+)> ?([\d\-\:\.TZ]+) (\w+) (\w+)\/(\w+)\[(\d+)\]: (.*)$/);
+    var obj = {};
+
+    obj.originalMessage = msg;
+
+    if (matches) {
+        obj.prival = matches[1];
+        obj.timestamp = new Date(matches[2]);
+        obj.host = matches[3];
+        obj.appName = matches[4];
+        obj.tag = matches[5];
+        obj.pid = matches[6];
+        obj.message = matches[7];
+    }
+
+    return obj;
+}
 
 var server = net.createServer(function(socket) {
     var lstream = new lineStream({encoding: 'utf8'});
@@ -27,11 +45,16 @@ var server = net.createServer(function(socket) {
         line = lstream.read();
 
         while (line !== null) {
-            // The parser assumes there's a version after the '>' but docker
-            // doesn't seem to do that properly, so we "fix" it here and set
-            // to version 1 per RFC 5424.
-            line = line.replace(/>/, '>1 ');
-            parsedMessage = syslogParser.parse(line);
+            // Docker does not seem to generate correct syslog messages. It's
+            // amazing they work at all. None of the parsers I've been able to
+            // find can parse them correctly. The newest versions of Docker do
+            // not use the golang syslog module as that's deprecated. And some
+            // bugs have been fixed in 3rd party modules like:
+            //
+            // https://github.com/RackSec/srslog/issues/15
+            //
+            // Until there are valid messages, we'll just parse manually.
+            parsedMessage = parser(line);
             process.send(parsedMessage);
 
             // read the next line

@@ -97,7 +97,9 @@ test('send a gelf message', function _test(t) {
         t.equal(msg._command, '/bin/bash', 'check _command');
         t.equal(msg._container_id, GENERATOR.containerId, 'check _container_id');
         t.equal(msg._container_name, GENERATOR.containerName, 'check _container_name');
-        t.equal(msg._created, GENERATOR.createTime, 'check _created');
+        // replace the 0Z since magically dockerlogger doesn't keep it.
+        t.equal(msg._created, GENERATOR.createTime.replace(/0+Z$/, 'Z'),
+            'check _created: ' + GENERATOR.createTime);
         t.equal(msg._image_id, GENERATOR.imageId, 'check _image_id');
         t.equal(msg._image_name, GENERATOR.imageName, 'check _image_name');
         t.equal(msg._tag, GENERATOR.driverOpts['gelf-tag'], 'check _tag');
@@ -110,7 +112,11 @@ test('send a gelf message', function _test(t) {
 
     // send the test messages
     GENERATOR.writeStdout('stdout gelf test message\n');
-    GENERATOR.writeStderr('stderr gelf test message\n');
+    // delay on the second message to guarantee order
+    // XXX: shouldn't dockerlogger guarantee order?!
+    setTimeout(function _sendStderrMsg() {
+        GENERATOR.writeStderr('stderr gelf test message\n');
+    }, 100);
 });
 
 test('teardown', function _test(t) {

@@ -105,7 +105,12 @@ test('send a fluentd message', function _test(t) {
 
     // send the test messages
     GENERATOR.writeStdout('stdout fluentd test message\n');
-    GENERATOR.writeStderr('stderr fluentd test message\n');
+
+    // delay on the second message to guarantee order
+    // XXX: shouldn't dockerlogger guarantee order?!
+    setTimeout(function _sendStderrMsg() {
+        GENERATOR.writeStderr('stderr fluentd test message\n');
+    }, 100);
 });
 
 test('teardown', function _test(t) {

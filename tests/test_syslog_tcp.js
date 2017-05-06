@@ -82,21 +82,18 @@ test('send a syslog message', function _test(t) {
         if (received === 1) {
             t.equal(msg.message, 'stdout syslog test message',
                 'check message');
-            t.equal(msg.severity, 'info', '1st msg is stdout');
+            t.equal(msg.prival, '14', '1st msg is stdout');
         } else {
             t.equal(msg.message, 'stderr syslog test message',
                 'check message');
-            t.equal(msg.severity, 'err', '2nd msg is stderr');
+            t.equal(msg.prival, '11', '2nd msg is stderr');
         }
 
-        delta = now - (new Date(msg.time)).getTime();
+        delta = now - (new Date(msg.timestamp)).getTime();
         t.ok(delta < 10000, 'timestamp less than 10s old (' + delta + 'ms)');
-        t.equal(msg.facility, 'user', 'check facility');
-
-        if (received === 2) {
-            // got both!
-            t.end();
-        }
+        t.equal(msg.host, os.hostname(), 'check hostname');
+        t.equal(msg.appName, 'dockerlogger', 'check appName');
+        t.equal(msg.tag, GENERATOR.driverOpts['syslog-tag'], 'check tag');
 
         console.error('# msg: ' + JSON.stringify(msg));
 
@@ -108,7 +105,11 @@ test('send a syslog message', function _test(t) {
 
     // send the test messages
     GENERATOR.writeStdout('stdout syslog test message\n');
-    GENERATOR.writeStderr('stderr syslog test message\n');
+    // delay on the second message to guarantee order
+    // XXX: shouldn't dockerlogger guarantee order?!
+    setTimeout(function _sendStderrMsg() {
+        GENERATOR.writeStderr('stderr syslog test message\n');
+    }, 100);
 });
 
 test('teardown', function _test(t) {
