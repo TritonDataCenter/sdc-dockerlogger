@@ -113,6 +113,61 @@ test('send some syslog messages', function _test(t) {
     }, 100);
 });
 
+test('shutdown and restart receiver', function _test(t) {
+    var sent = 0;
+    var received = 0;
+
+    // remove previous listener(s)
+    NOTIFIER.removeAllListeners('message');
+
+    NOTIFIER.on('message', function onMessage(msg) {
+        var msgnum;
+
+        if (process.env.DEBUG_MSG) {
+            console.error('# msg: ' + JSON.stringify(msg));
+        }
+        received++;
+
+        // just get the number 13 from 'test message 13'
+        msgnum = Number(msg.message.replace(/[^\d]/g, ''));
+
+        if (msgnum >= 19) {
+            t.equal(received, 10, 'should have received 10 messages');
+            t.end();
+        }
+
+        if (received === 2) {
+            // after we've received 2, stop the receiver and wait 5 seconds
+            // and start it again.
+            SINK.stop();
+            setTimeout(function _restartSink() {
+                SINK = new LogSink({
+                    driver: 'syslog_tcp',
+                    exitCallback: function (code) {
+                        console.log('# exit from sink: ' + code);
+                    },
+                    msgCallback: function (msg) {
+                        NOTIFIER.emit('message', msg);
+                    }
+                });
+                SINK.start(function _onSinkStart() {
+                    console.error('# started new syslog_tcp sink');
+                });
+            }, 5000);
+        }
+    });
+
+    function _sendUntil20() {
+        GENERATOR.writeStdout('test message ' + sent + '\n');
+        sent++;
+        if (sent < 20) {
+            setTimeout(_sendUntil20, 500);
+        }
+    }
+
+    _sendUntil20();
+});
+
 test('teardown', function _test(t) {
     t.ok(true, 'tearing down');
 
