@@ -5,12 +5,19 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 ELFEDIT=/usr/bin/elfedit
 GOPATH=$(PWD)/vendor
 TARGETS=dockerlogger dockerlogger.smartos
+
+_AWK := $(shell (which gawk >/dev/null && echo gawk) \
+	|| (which nawk >/dev/null && echo nawk) \
+	|| echo awk)
+BRANCH := $(shell git symbolic-ref HEAD | $(_AWK) -F/ '{print $$3}')
+
+DESTDIR ?= .
 
 ifeq ($(shell uname -s),Darwin)
 	TARGET = dockerlogger
@@ -25,17 +32,15 @@ dockerlogger.smartos: dockerlogger
 	/usr/bin/elfedit -e 'ehdr:ei_osabi ELFOSABI_SOLARIS' dockerlogger dockerlogger.smartos
 
 dockerlogger: dockerlogger.go
-	GOPATH=$(GOPATH) go build
+	GOPATH=$(GOPATH) go build $<
 
 .PHONY: fmt
 fmt:
 	gofmt -w dockerlogger.go
 
 .PHONY: pkg
-pkg: dockerlogger.smartos
-	@[[ -n "$(BRANCH)" ]] || (echo "missing BRANCH="; exit 1)
-	@[[ -n "$(DESTDIR)" ]] || (echo "missing DESTDIR="; exit 1)
-	./tools/mk-shar -b $(BRANCH) -o $(DESTDIR)
+pkg: $(DESTDIR) dockerlogger.smartos
+	./tools/mk-shar -b "$(BRANCH)" -o $(DESTDIR)
 
 .PHONY: check
 check:
@@ -51,4 +56,10 @@ test: $(TARGET) node_modules/tape/bin/tape
 .PHONY: clean
 clean:
 	rm -f $(TARGETS)
+	rm -f $(DESTDIR)/dockerlogger-*.manifest
+	rm -f $(DESTDIR)/dockerlogger-*.md5sum
+	rm -f $(DESTDIR)/dockerlogger-*.sh
 	rm -rf build
+
+$(DESTDIR):
+	mkdir -p $@
