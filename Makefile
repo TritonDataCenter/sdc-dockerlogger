@@ -5,8 +5,11 @@
 #
 
 #
-# Copyright (c) 2018, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
+
+
+NAME=dockerlogger
 
 ELFEDIT=/usr/bin/elfedit
 GOPATH=$(PWD)/vendor
@@ -17,13 +20,25 @@ _AWK := $(shell (which gawk >/dev/null && echo gawk) \
 	|| echo awk)
 BRANCH := $(shell git symbolic-ref HEAD | $(_AWK) -F/ '{print $$3}')
 
+ENGBLD_REQUIRE := $(shell git submodule update --init deps/eng)
+include ./deps/eng/tools/mk/Makefile.defs
+TOP ?= $(error Unable to access eng.git submodule Makefiles.)
+
 DESTDIR ?= .
+
+GOROOT ?= /root/opt/go
 
 ifeq ($(shell uname -s),Darwin)
 	TARGET = dockerlogger
 else
 	TARGET = dockerlogger.smartos
 endif
+
+CLEAN_FILES = $(TARGETS) \
+	      $(DESTDIR)/dockerlogger-*.manifest \
+	      $(DESTDIR)/dockerlogger-*.md5sum \
+	      $(DESTDIR)/dockerlogger-*.sh \
+	      build
 
 .PHONY: all
 all: $(TARGET)
@@ -32,19 +47,23 @@ dockerlogger.smartos: dockerlogger
 	/usr/bin/elfedit -e 'ehdr:ei_osabi ELFOSABI_SOLARIS' dockerlogger dockerlogger.smartos
 
 dockerlogger: dockerlogger.go
-	GOPATH=$(GOPATH) go build $<
+	GOPATH=$(GOPATH) $(GOROOT)/bin/go build $<
 
 .PHONY: fmt
 fmt:
-	gofmt -w dockerlogger.go
+	$(GOROOT)/bin/gofmt -w dockerlogger.go
 
 .PHONY: pkg
 pkg: $(DESTDIR) dockerlogger.smartos
 	./tools/mk-shar -b "$(BRANCH)" -o $(DESTDIR)
 
-.PHONY: check
-check:
-	@echo "No 'make check' here."
+.PHONY: publish
+publish: pkg
+	mkdir -p $(ENGBLD_BITS_DIR)/$(NAME)
+	cp $(DESTDIR)/dockerlogger-*.manifest \
+	    $(DESTDIR)/dockerlogger-*.md5sum \
+	    $(DESTDIR)/dockerlogger-*.sh \
+	    $(ENGBLD_BITS_DIR)/$(NAME)
 
 node_modules/tape/bin/tape:
 	@npm install
@@ -53,13 +72,7 @@ node_modules/tape/bin/tape:
 test: $(TARGET) node_modules/tape/bin/tape
 	@ls -1 ./tests/test_*.js | xargs -L 1 node
 
-.PHONY: clean
-clean:
-	rm -f $(TARGETS)
-	rm -f $(DESTDIR)/dockerlogger-*.manifest
-	rm -f $(DESTDIR)/dockerlogger-*.md5sum
-	rm -f $(DESTDIR)/dockerlogger-*.sh
-	rm -rf build
-
 $(DESTDIR):
 	mkdir -p $@
+
+include ./deps/eng/tools/mk/Makefile.targ

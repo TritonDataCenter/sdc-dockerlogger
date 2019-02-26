@@ -1,4 +1,9 @@
-build
+/bits
+/build
+/make_stamps
 dockerlogger
 dockerlogger.smartos
+dockerlogger*.manifest
+dockerlogger*.md5sum
+dockerlogger*.sh
 node_modules
