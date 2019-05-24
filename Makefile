@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2019, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 
@@ -15,6 +15,10 @@ ELFEDIT=/usr/bin/elfedit
 GOPATH=$(PWD)/vendor
 TARGETS=dockerlogger dockerlogger.smartos
 
+# Set this so that we validate the manifest as part of
+# 'make check'
+SMF_MANIFESTS=smf/dockerlogger.xml
+
 _AWK := $(shell (which gawk >/dev/null && echo gawk) \
 	|| (which nawk >/dev/null && echo nawk) \
 	|| echo awk)
@@ -23,6 +27,7 @@ BRANCH := $(shell git symbolic-ref HEAD | $(_AWK) -F/ '{print $$3}')
 ENGBLD_REQUIRE := $(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
+include ./deps/eng/tools/mk/Makefile.smf.defs
 
 DESTDIR ?= .
 
@@ -76,3 +81,4 @@ $(DESTDIR):
 	mkdir -p $@
 
 include ./deps/eng/tools/mk/Makefile.targ
+include ./deps/eng/tools/mk/Makefile.smf.targ
