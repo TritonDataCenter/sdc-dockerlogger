@@ -13,7 +13,7 @@
 pipeline {
 
     agent {
-        label '!platform:true && golang:1.8.1 && pi:20181206T011455Z && jenkins_agent:2'
+        label '!platform:true && golang:1.8.1 && pi:20181206T011455Z && jenkins_agent:3'
     }
 
     options {
