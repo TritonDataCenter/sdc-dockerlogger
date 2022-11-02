@@ -72,7 +72,7 @@ function mk_shar_manifest() {
     local release_file
     local version
     release_file=$(basename `ls ${TOP}/build/dockerlogger-*.sh | head -n 1`)
-    version=$(json -f package.json version)
+    version=$(json -f ${TOP}/package.json version)
 
     mkdir -p ${stage_dir}/${name}
     cat ${TOP}/manifest.tmpl | sed \
