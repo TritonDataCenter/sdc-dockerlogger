@@ -7,6 +7,7 @@
 
 #
 # Copyright (c) 2015, Joyent, Inc.
+# Copyright 2022 MNX Cloud, Inc.
 #
 
 #
@@ -69,12 +70,15 @@ function mk_shar_manifest() {
     local stage_dir=/tmp
     local stamp=${branch}-${TIMESTAMP}-${GITDESCRIBE}
     local release_file
+    local version
     release_file=$(basename `ls ${TOP}/build/dockerlogger-*.sh | head -n 1`)
+    version=$(json -f ${TOP}/package.json version)
 
     mkdir -p ${stage_dir}/${name}
     cat ${TOP}/manifest.tmpl | sed \
             -e "s/UUID/$(uuid -v4)/" \
             -e "s/NAME/${name}/" \
+            -e "s/VERSION/${version}/" \
             -e "s/BUILDSTAMP/${stamp}/g" \
             -e "s/SIZE/$(stat --printf="%s" ${TOP}/build/${release_file})/" \
             -e "s/SHA/$(openssl sha1 ${TOP}/build/${release_file} \
