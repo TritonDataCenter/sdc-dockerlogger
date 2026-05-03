@@ -10,7 +10,7 @@
         "graygelf": "1.0.2",
         "msgpack-lite": "0.1.26",
         "tape": "4.6.3",
-        "uuid": "3.0.1",
+        "uuid": "14.0.0",
         "vasync": "1.6.4"
     },
     "license": "MPL-2.0"
